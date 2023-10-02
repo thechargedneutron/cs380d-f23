@@ -7,18 +7,24 @@ basePort = 9000
 
 class KVSRPCServer:
     # TODO: You need to implement details for these functions.
+    def __init__(self):
+        self.storage = {}
 
     ## put: Insert a new-key-value pair or updates an existing
     ## one with new one if the same key already exists.
     def put(self, key, value):
-        return "[Server " + str(serverId) + "] Receive a put request: " + "Key = " + str(key) + ", Val = " + str(value)
+        self.storage[key] = value
+        return "[Server " + str(serverId) + "] Done. Receive a put request: " + "Key = " + str(key) + ", Val = " + str(value)
 
     ## get: Get the value associated with the given key.
     def get(self, key):
+        return 'Value is : {}'.format(self.storage[key])
         return "[Server " + str(serverId) + "] Receive a get request: " + "Key = " + str(key)
 
     ## printKVPairs: Print all the key-value pairs at this server.
     def printKVPairs(self):
+        for key in self.storage:
+            print(key, self.storage[key])
         return "[Server " + str(serverId) + "] Receive a request printing all KV pairs stored in this server"
 
     ## shutdownServer: Terminate the server itself normally.
