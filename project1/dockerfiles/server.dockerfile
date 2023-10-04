@@ -1,4 +1,4 @@
-FROM sekwonlee/kvs:base
+FROM thechargedneutron/kvs:base
 
 MAINTAINER Sekwon Lee <sklee@cs.utexas.edu> version: 0.1
 
