@@ -2,6 +2,7 @@ import xmlrpc.client
 import xmlrpc.server
 from socketserver import ThreadingMixIn
 from xmlrpc.server import SimpleXMLRPCServer
+import multiprocessing
 
 kvsServers = dict()
 baseAddr = "http://localhost:"
@@ -12,13 +13,53 @@ class SimpleThreadedXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 class FrontendRPCServer:
     # TODO: You need to implement details for these functions.
+    def __init__(self):
+        # Implement a lock for every server
+        self.lock = {}
+        # Parameters
+        self.timeout = 1.5
+
+    def parallel_worker(self, func, params, queue):
+        if 'key' in params and 'value' in params:
+            # Put request
+            result = func(params['key'], params['value'])
+        elif 'key' in params:
+            # Get request
+            result = func(params['key'])
+        queue.put((func.__name__, params, result))
 
     ## put: This function routes requests from clients to proper
     ## servers that are responsible for inserting a new key-value
     ## pair or updating an existing one.
     def put(self, key, value):
-        serverId = key % len(kvsServers)
-        return kvsServers[serverId].put(key, value)
+
+        # Start a parallel process to put to all servers
+        manager = multiprocessing.Manager()
+        queue = manager.Queue()
+
+        # Prepare a list of jobs to parallelize
+        calls = [(kvsServers[serverId].put, {'serverId': serverId, 'key': key, 'value': value}) for serverId in kvsServers]
+        processes = []
+        for func, params in calls:
+            process = multiprocessing.Process(target=self.parallel_worker, args=(func, params, queue))
+            processes.append(process)
+            process.start()
+        
+        # Now collect responses
+        for i, process in enumerate(processes):
+            process.join(timeout=self.timeout)
+            # Kill the job if taking too long
+            if process.is_alive():
+                process.terminate()
+                queue.put((calls[i][0].__name__, calls[i][1], "Error: Timeout"))
+            process.join()
+        
+        # Process the success and failure cases
+        result_str = ""
+        while not queue.empty():
+            func_name, params, result = queue.get()
+            result_str += f"Call to {func_name} with params {params} returned: {result}"
+        return result_str
 
     ## get: This function routes requests from clients to proper
     ## servers that are responsible for getting the value
