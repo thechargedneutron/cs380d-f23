@@ -3,6 +3,7 @@ import xmlrpc.server
 from socketserver import ThreadingMixIn
 from xmlrpc.server import SimpleXMLRPCServer
 import multiprocessing
+import time
 
 kvsServers = dict()
 baseAddr = "http://localhost:"
@@ -26,7 +27,7 @@ class FrontendRPCServer:
         elif 'key' in params:
             # Get request
             result = func(params['key'])
-        queue.put((func.__name__, params, result))
+        queue.put((params, result))
 
     ## put: This function routes requests from clients to proper
     ## servers that are responsible for inserting a new key-value
@@ -51,14 +52,14 @@ class FrontendRPCServer:
             # Kill the job if taking too long
             if process.is_alive():
                 process.terminate()
-                queue.put((calls[i][0].__name__, calls[i][1], "Error: Timeout"))
+                queue.put((calls[i][1], "Error: Timeout"))
             process.join()
-        
+
         # Process the success and failure cases
         result_str = ""
         while not queue.empty():
-            func_name, params, result = queue.get()
-            result_str += f"Call to {func_name} with params {params} returned: {result}"
+            params, result = queue.get()
+            result_str += f"Call with params {params} returned: {result}"
         return result_str
 
     ## get: This function routes requests from clients to proper

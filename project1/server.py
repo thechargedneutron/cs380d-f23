@@ -21,7 +21,7 @@ class KVSRPCServer:
         if key in self.db:
             return ("Get OK", self.db[key])
         else:
-            return ("Get ERROR: key not in database", None)
+            return ("Get ERROR: key not in database", 'NULL')
 
     ## printKVPairs: Print all the key-value pairs at this server.
     def printKVPairs(self):
