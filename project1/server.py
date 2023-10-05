@@ -14,7 +14,7 @@ class KVSRPCServer:
     ## one with new one if the same key already exists.
     def put(self, key, value):
         self.db[key] = value
-        return ("Put OK")
+        return ("Put OK",)
 
     ## get: Get the value associated with the given key.
     def get(self, key):
