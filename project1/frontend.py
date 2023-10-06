@@ -37,7 +37,7 @@ class FrontendRPCServer:
                 pass
             # Get request
             result = func(params['key'])
-        queue.put((params, f"{result}---{str(self.locks)}---{params['serverId']}---{params['serverId'] in self.locks}----{result[0] == "Put OK"}---"))
+        queue.put((params, f"{result}---{str(self.locks)}---{params['serverId']}---{params['serverId'] in self.locks}----{result[0]}---"))
 
     ## put: This function routes requests from clients to proper
     ## servers that are responsible for inserting a new key-value
