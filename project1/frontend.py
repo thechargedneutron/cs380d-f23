@@ -5,6 +5,7 @@ from xmlrpc.server import SimpleXMLRPCServer
 import multiprocessing
 import time
 import random
+from multiprocessing import Pool
 
 kvsServers = dict()
 baseAddr = "http://localhost:"
@@ -20,6 +21,19 @@ class FrontendRPCServer:
         self.locks = {}
         # Parameters
         self.timeout = 1.5
+
+    @staticmethod
+    def put_remote_server(serverId, key, value):
+        try:
+            # Assuming you have a function that updates the remote dictionary
+            # response = update_remote_dict_on_server(i)
+            response = kvsServers[serverId].put(key, value)
+            print('We get the response from {} as {}'.format(serverId, response))
+            # response = "Updated server {}".format(i)  # Placeholder response
+            return (serverId, response)
+        except Exception as e:
+            # Return an error message or log it as needed
+            return (serverId, str(e))
 
     def parallel_worker(self, func, params, queue):
         if 'key' in params and 'value' in params:
@@ -39,10 +53,21 @@ class FrontendRPCServer:
             result = func(params['key'])
         queue.put((params, f"{result}---{str(self.locks)}---{params['serverId']}---{params['serverId'] in self.locks}----{result[0]}---"))
 
+    def put(self, key, value):
+        print('This is the start of the pool')
+        # Pool put requests
+        parallel_calls = [(serverId, key, value) for serverId in kvsServers]
+        with Pool(processes=len(parallel_calls)) as pool:
+            responses = pool.starmap(FrontendRPCServer.put_remote_server, parallel_calls)
+        print('This is coming back from the put requests...')
+        print(responses)
+        print(type(responses))
+        return "DONE " + str(responses)# dict(responses)
+
     ## put: This function routes requests from clients to proper
     ## servers that are responsible for inserting a new key-value
     ## pair or updating an existing one.
-    def put(self, key, value):
+    def put_2(self, key, value):
         # Lock all servers
         for serverId in kvsServers:
             self.locks[serverId] = True
@@ -88,6 +113,12 @@ class FrontendRPCServer:
     ## servers that are responsible for getting the value
     ## associated with the given key.
     def get(self, key):
+        result_str = ""
+        for serverId in kvsServers:
+            result_str += str(kvsServers[serverId].get(key))
+        return result_str
+
+    def get_2(self, key):
         # Randomly sample a serverId from kvsServers and use that to get the value, pause for the lock in worker function
         while len(kvsServers) > 0:
             chosenServerId = random.choice(list(kvsServers.keys()))
