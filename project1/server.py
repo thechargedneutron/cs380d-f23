@@ -10,6 +10,10 @@ class KVSRPCServer:
     def __init__(self):
         self.db = {}
 
+    def ping(self):
+        print("Ping request received..")
+        return "Ping OK"
+
     ## put: Insert a new-key-value pair or updates an existing
     ## one with new one if the same key already exists.
     def put(self, key, value):

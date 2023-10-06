@@ -22,6 +22,26 @@ class FrontendRPCServer:
         # Parameters
         self.timeout = 1.5
 
+    def check_members(self):
+        unresponsive_servers = []
+        max_retries = 500
+
+        for serverId, server in kvsServers.items():
+            is_responsive = False
+            for _ in range(max_retries):
+                try:
+                    if server.ping() == "Ping OK":
+                        is_responsive = True
+                        break
+                except Exception as e:
+                    pass
+
+            if not is_responsive:
+                unresponsive_servers.append(serverId)
+
+        for serverId in unresponsive_servers:
+            kvsServers.pop(serverId, None)
+
     @staticmethod
     def put_remote_server(serverId, key, value):
         try:
@@ -55,6 +75,7 @@ class FrontendRPCServer:
 
     def put(self, key, value):
         print('This is the start of the pool')
+        self.check_members()
         # Pool put requests
         parallel_calls = [(serverId, key, value) for serverId in kvsServers]
         with Pool(processes=len(parallel_calls)) as pool:
